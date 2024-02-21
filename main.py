@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
+import json
 
 
-df = pd.read_json('ids.json')
+df = pd.read_json('imoveis.json')
 
 ex_clientes = [0, 1, 14, 15, 19, 23, 27, 28, 35, 36, 44, 46, 47, 48, 52]
 df = df[~df['id'].isin(ex_clientes)]
@@ -49,6 +50,34 @@ df = df.replace('', np.nan).fillna(np.nan)
 df = df.replace('', np.nan)
 df = df.fillna(np.nan)
 
+
 df["cidade"] = df["cidade"].astype("str")
 
-print('ok')
+with open ("cidades_canonicas.json", "r") as arquivo:
+    cidades_canonicas = json.load(arquivo)
+
+from sentence_transformers import SentenceTransformer, util
+model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+
+
+def similaridade_cidades(cidade1, cidade2):
+    embedding_1 = model.encode(cidade1, convert_to_tensor=True)
+    embedding_2 = model.encode(cidade2, convert_to_tensor=True)
+    return util.pytorch_cos_sim(embedding_1, embedding_2)
+
+for index, row in df.iterrows():
+    print(index)
+    cidade = row["cidade"]
+    if pd.isnull(cidade):
+        continue
+    max_sim = 0
+    cidade_corrigida = cidade
+    for cidade_normalizada, cidade_original in cidades_canonicas.items():
+        sim = similaridade_cidades(cidade, cidade_normalizada)
+        if sim > max_sim:
+            max_sim = sim
+            cidade_corrigida = cidade_original
+    df.at[index, "cidade"] = cidade_corrigida
+
+
+df.to_csv("imoveis_cidades_corrigidas.csv", index=False)
