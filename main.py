@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
 import json
+import os
 
-
+print('Iniciando processo ...')
 df = pd.read_json('imoveis.json')
 
 ex_clientes = [0, 1, 14, 15, 19, 23, 27, 28, 35, 36, 44, 46, 47, 48, 52]
@@ -49,6 +50,7 @@ df.loc[df['status'] == 2, 'status'] = 'Inativo'
 df = df.replace('', np.nan).fillna(np.nan)
 df = df.replace('', np.nan)
 df = df.fillna(np.nan)
+os.system('clear' if os.name == 'posix' else 'cls')
 
 
 df["cidade"] = df["cidade"].astype("str")
@@ -57,17 +59,18 @@ with open ("cidades_canonicas.json", "r") as arquivo:
     cidades_canonicas = json.load(arquivo)
 
 from sentence_transformers import SentenceTransformer, util
-model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
-
+modelo = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+os.system('clear' if os.name == 'posix' else 'cls')
+print('Iniciando modelo de transformação dos dados')
 
 def similaridade_cidades(cidade1, cidade2):
-    embedding_1 = model.encode(cidade1, convert_to_tensor=True)
-    embedding_2 = model.encode(cidade2, convert_to_tensor=True)
+    embedding_1 = modelo.encode(cidade1, convert_to_tensor=True)
+    embedding_2 = modelo.encode(cidade2, convert_to_tensor=True)
     return util.pytorch_cos_sim(embedding_1, embedding_2)
 
-for index, row in df.iterrows():
-    print(index)
-    cidade = row["cidade"]
+for contador, (index, linha) in enumerate(df.iterrows()):
+    print(f'Loop {contador+1}/{len(df)}')
+    cidade = linha["cidade"]
     if pd.isnull(cidade):
         continue
     max_sim = 0
@@ -79,5 +82,5 @@ for index, row in df.iterrows():
             cidade_corrigida = cidade_original
     df.at[index, "cidade"] = cidade_corrigida
 
-
+print('Finalizado')
 df.to_csv("imoveis_cidades_corrigidas.csv", index=False)
