@@ -59,17 +59,22 @@ with open ("cidades_canonicas.json", "r") as arquivo:
     cidades_canonicas = json.load(arquivo)
 
 from sentence_transformers import SentenceTransformer, util
+
+import torch
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 modelo = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 os.system('clear' if os.name == 'posix' else 'cls')
 print('Iniciando modelo de transformação dos dados')
 
 def similaridade_cidades(cidade1, cidade2):
-    embedding_1 = modelo.encode(cidade1, convert_to_tensor=True)
-    embedding_2 = modelo.encode(cidade2, convert_to_tensor=True)
+    embedding_1 = modelo.encode(cidade1, convert_to_tensor=True, device=device)
+    embedding_2 = modelo.encode(cidade2, convert_to_tensor=True, device=device)
     return util.pytorch_cos_sim(embedding_1, embedding_2)
 
 for contador, (index, linha) in enumerate(df.iterrows()):
-    print(f'Loop {contador+1}/{len(df)}')
+    progresso = (contador / len(df)) * 100
+    print(f'Loop {contador+1}/{len(df)} - {progresso:.2f}%')
     cidade = linha["cidade"]
     if pd.isnull(cidade):
         continue
