@@ -50,6 +50,7 @@ df.loc[df['status'] == 2, 'status'] = 'Inativo'
 df = df.replace('', np.nan).fillna(np.nan)
 df = df.replace('', np.nan)
 df = df.fillna(np.nan)
+df = df.dropna(subset=["cidade"])
 os.system('clear' if os.name == 'posix' else 'cls')
 
 
@@ -60,16 +61,16 @@ with open ("cidades_canonicas.json", "r") as arquivo:
 
 from sentence_transformers import SentenceTransformer, util
 
-import torch
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 modelo = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 os.system('clear' if os.name == 'posix' else 'cls')
 print('Iniciando modelo de transformação dos dados')
 
-def similaridade_cidades(cidade1, cidade2):
-    embedding_1 = modelo.encode(cidade1, convert_to_tensor=True, device=device)
-    embedding_2 = modelo.encode(cidade2, convert_to_tensor=True, device=device)
+print('Pré-calcular os embeddings das cidades canônicas')
+embeddings_cidades_canonicas = {}
+for cidade_normalizada, cidade_original in cidades_canonicas.items():
+    embeddings_cidades_canonicas[cidade_normalizada] = modelo.encode(cidade_normalizada, convert_to_tensor=True, device='cuda')
+
+def similaridade_cidades(embedding_1, embedding_2):
     return util.pytorch_cos_sim(embedding_1, embedding_2)
 
 for contador, (index, linha) in enumerate(df.iterrows()):
@@ -80,11 +81,12 @@ for contador, (index, linha) in enumerate(df.iterrows()):
         continue
     max_sim = 0
     cidade_corrigida = cidade
-    for cidade_normalizada, cidade_original in cidades_canonicas.items():
-        sim = similaridade_cidades(cidade, cidade_normalizada)
+    embedding_cidade = modelo.encode(cidade, convert_to_tensor=True, device='cuda')
+    for cidade_normalizada, embedding_cidade_normalizada in embeddings_cidades_canonicas.items():
+        sim = similaridade_cidades(embedding_cidade, embedding_cidade_normalizada)
         if sim > max_sim:
             max_sim = sim
-            cidade_corrigida = cidade_original
+            cidade_corrigida = cidades_canonicas[cidade_normalizada]
     df.at[index, "cidade"] = cidade_corrigida
 
 print('Finalizado')
