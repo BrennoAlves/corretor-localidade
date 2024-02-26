@@ -48,8 +48,6 @@ def carregar():
     df_imoveis = df_imoveis.replace('', np.nan).fillna(np.nan).dropna(subset=["cidade"])
     df_imoveis["cidade"] = df_imoveis["cidade"].astype("str")
 
-    df_imoveis = df_imoveis.head(1000)
-
     return df_imoveis, cidades_canonicas, modelo
 
 def normalizar_cidades(df_imoveis, cidades_canonicas, modelo):
