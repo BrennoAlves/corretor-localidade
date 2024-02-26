@@ -3,3 +3,7 @@ Scripts
 share
 imoveis_limpos.json
 *.xlsx
+pyvenv.cfg
+.vscode
+Include
+site-packages
