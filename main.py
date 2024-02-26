@@ -2,125 +2,154 @@ import pandas as pd
 import numpy as np
 import json
 import os
-from sentence_transformers import SentenceTransformer, util
 import pickle
+from sentence_transformers import SentenceTransformer, util
 
-os.system('clear' if os.name == 'posix' else 'cls')
-print('Pré-processamento')
+def limpar_console():
+    os.system('clear' if os.name == 'posix' else 'cls')
 
-tipos = pd.read_csv('tipos.csv').drop(columns=['sigla','id_tipo_terra'])
+def carregar_e_preprar_dados():
+    limpar_console()
+    print('Carregando e preparando dados...')
 
-descarte = ['id_proprietario', 'posicao', 'sacadas', 'video', 'id_filial',
-                'id_captador', 'id_captador2', 'referencia', 'obs', 'descricao', 'destaque',
-                'chave', 'exclusivo', 'parceria', 'placa', 'ids_atributos', 'comissao_porcentagem',
-                'comissao_valor', 'id_categoria_extra', 'testada', 'pais', 'id_usuario', 'data_alteracao',
-                'lado_direito', 'lado_esquerdo', 'fundos', 'area_servicos', 'copas', 'clicks',
-                'codigo_imobiliaria', 'vivareal', 'zapimoveis', 'terra', 'olx', 'mostrar_condominio',
-                'ordem', 'restricoes', 'ultima_alteracao', 'id_municipio', 'id_bairro', 'n_iptu',
-                'n_matricula', 'n_damae', 'n_cliente_cemig', 'n_instalacao_cemig', 'area_gourmet',
-                'lavabo', 'lavanderia', 'closet', 'piscina', 'a_partir','id_tipo',
-                'mostrar_iptu', 'id', 'id_cliente']
+    tipos_df = pd.read_csv('tipos.csv').drop(columns=['sigla','id_tipo_terra'])
+    colunas_descartadas = ['id_proprietario', 'posicao', 'sacadas', 'video', 'id_filial',
+                          'id_captador', 'id_captador2', 'referencia', 'obs', 'descricao', 'destaque',
+                          'chave', 'exclusivo', 'parceria', 'placa', 'ids_atributos', 'comissao_porcentagem',
+                          'comissao_valor', 'id_categoria_extra', 'testada', 'pais', 'id_usuario', 'data_alteracao',
+                          'lado_direito', 'lado_esquerdo', 'fundos', 'area_servicos', 'copas', 'clicks',
+                          'codigo_imobiliaria', 'vivareal', 'zapimoveis', 'terra', 'olx', 'mostrar_condominio',
+                          'ordem', 'restricoes', 'ultima_alteracao', 'id_municipio', 'id_bairro', 'n_iptu',
+                          'n_matricula', 'n_damae', 'n_cliente_cemig', 'n_instalacao_cemig', 'area_gourmet',
+                          'lavabo', 'lavanderia', 'closet', 'piscina', 'a_partir','id_tipo',
+                          'mostrar_iptu', 'id', 'id_cliente']
 
-cidades_canonicas = json.load(open("cidades_canonicas.json", "r", encoding="utf-8"))
-modelo = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+    cidades_canonicas = json.load(open("cidades_canonicas.json", "r", encoding="utf-8"))
+    modelo = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
-df = pd.read_json('imoveis.json')
-df = df[~df['id'].isin([0, 1, 14, 15, 19, 23, 27, 28, 35, 36, 44, 46, 47, 48, 52])]
-df = df.dropna(axis=0, how='all').dropna(axis=1, how='all')
+    df_imoveis = pd.read_json('imoveis.json')
+    df_imoveis = df_imoveis[~df_imoveis['id'].isin([0, 1, 14, 15, ...])]
+    df_imoveis = df_imoveis.dropna(axis=0, how='all').dropna(axis=1, how='all')
 
-for i in range(len(df)):
-    try:
-        df.loc[i, "nome_tipo"] = tipos.loc[tipos["id"] == df.loc[i, "id_tipo"], "nome"].iloc[0]
-    except:
-        pass
+    for i in range(len(df_imoveis)):
+        try:
+            df_imoveis.loc[i, "tipo_imovel"] = tipos_df.loc[tipos_df["id"] == df_imoveis.loc[i, "id_tipo"], "nome"].iloc[0]
+        except:
+            pass
 
-df = df.dropna(subset=['nome_tipo']).drop(columns=descarte)
+    df_imoveis = df_imoveis.dropna(subset=['tipo_imovel']).drop(columns=colunas_descartadas)
 
-df.loc[df['id_modalidade'] == 1, 'id_modalidade'] = 'Venda'
-df.loc[df['id_modalidade'] == 2, 'id_modalidade'] = 'Aluguel'
-df.loc[df['id_modalidade'] == 3, 'id_modalidade'] = 'Temporada'
+    modalidades = {1: 'Venda', 2: 'Aluguel', 3: 'Temporada'}
+    df_imoveis['id_modalidade'] = df_imoveis['id_modalidade'].replace(modalidades)
 
-df.loc[df['status'] == 1, 'status'] = 'Ativo'
-df.loc[df['status'] == 2, 'status'] = 'Inativo'
+    status = {1: 'Ativo', 2: 'Inativo'}
+    df_imoveis['status'] = df_imoveis['status'].replace(status)
 
-df = df.replace('', np.nan).fillna(np.nan).dropna(subset=["cidade"])
+    df_imoveis = df_imoveis.replace('', np.nan).fillna(np.nan).dropna(subset=["cidade"])
+    df_imoveis["cidade"] = df_imoveis["cidade"].astype("str")
 
-df["cidade"] = df["cidade"].astype("str")
+    # REMOVER APÓS TESTE
+    df_imoveis = df_imoveis.head(1000)
 
-os.system('clear' if os.name == 'posix' else 'cls')
+    return df_imoveis, cidades_canonicas, modelo
 
-#EXCLUIR DEPOIS DE TESTAR
-df = df.head(1000)
+def normalizar_cidades(df_imoveis, cidades_canonicas, modelo):
+    print('Iniciando processo de correção dos nomes das cidades')
 
-# Corração das cidades
+    embeddings_cidades_canonicas = {}
 
-embeddings_cidades_canonicas = {}
+    for cidade_normalizada, cidade_original in cidades_canonicas.items():
+        embeddings_cidades_canonicas[cidade_normalizada] = modelo.encode(cidade_normalizada, convert_to_tensor=True, device='cuda')
 
-for cidade_normalizada, cidade_original in cidades_canonicas.items():
-    embeddings_cidades_canonicas[cidade_normalizada] = modelo.encode(cidade_normalizada, convert_to_tensor=True, device='cuda')
-pickle.dump(embeddings_cidades_canonicas, open('embeddings/cidades_canonicas.pkl', 'wb'))
+    pickle.dump(embeddings_cidades_canonicas, open('embeddings/cidades_canonicas.pkl', 'wb'))
 
-for contador, (index, linha) in enumerate(df.iterrows()):
-    progresso = (contador / len(df)) * 100
-    print(f'Loop {contador+1}/{len(df)} - {progresso:.2f}%')
-    cidade = linha["cidade"]
+def similaridade_cidades(embedding_1, embedding_2):
+        return util.pytorch_cos_sim(embedding_1, embedding_2).item()
 
-    if pd.isnull(cidade):
-        continue
+def normalizar_cidades(df_imoveis, cidades_canonicas, modelo):
+    print('Iniciando processo de correção dos nomes das cidades')
 
-    max_sim = 0
-    cidade_corrigida = cidade
-    embedding_cidade = modelo.encode(cidade, convert_to_tensor=True, device='cuda')
+    embeddings_cidades_canonicas = {}
 
-    for cidade_normalizada, embedding_cidade_normalizada in embeddings_cidades_canonicas.items():
-        sim = util.pytorch_cos_sim(embedding_cidade, embedding_cidade_normalizada)
+    for cidade_normalizada, cidade_original in cidades_canonicas.items():
+        embeddings_cidades_canonicas[cidade_normalizada] = modelo.encode(cidade_normalizada, convert_to_tensor=True, device='cuda')
 
-        if sim > max_sim:
-            max_sim = sim
-            cidade_corrigida = cidades_canonicas[cidade_normalizada]
+    pickle.dump(embeddings_cidades_canonicas, open('embeddings/cidades_canonicas.pkl', 'wb'))
 
-    df.at[index, "cidade_estimada"] = cidade_corrigida
+    def similaridade_cidades(embedding_1, embedding_2):
+        return util.pytorch_cos_sim(embedding_1, embedding_2).item()
 
-# Correção de bairros (apenas para São João del Rei)
+    for contador, (index, linha) in enumerate(df_imoveis.iterrows()):
+        progresso = (contador / len(df_imoveis)) * 100
+        print(f'Loop {contador+1}/{len(df_imoveis)} - {progresso:.2f}%')
+        cidade = linha["cidade"]
 
-df = df.query('cidade_estimada == "São João del Rei"')
+        if pd.isnull(cidade):
+            continue
 
-if os.path.exists('embeddings/bairros_canonicos.pkl'):
-    embeddings_bairros_canonicos = pickle.load(open('embeddings/bairros_canonicos.pkl', 'rb'))
-else:
-    bairros_canonicos = json.load(open('bairros_canonicos.json', 'r', encoding='utf-8'))
-    embeddings_bairros_canonicos = {}
-    for bairro_info in bairros_canonicos:
-        bairro = bairro_info["bairro"]
-        embeddings_bairros_canonicos[bairro] = modelo.encode(bairro, convert_to_tensor=True, device='cuda')
-    pickle.dump(embeddings_bairros_canonicos, open('embeddings/bairros_canonicos.pkl', 'wb'))
+        max_sim = 0
+        cidade_corrigida = cidade
+        embedding_cidade = modelo.encode(cidade, convert_to_tensor=True, device='cuda')
 
-def similaridade_bairros(embedding_1, embedding_2):
-    return util.pytorch_cos_sim(embedding_1, embedding_2)
+        for cidade_normalizada, embedding_cidade_normalizada in embeddings_cidades_canonicas.items():
+            sim = similaridade_cidades(embedding_cidade, embedding_cidade_normalizada)
 
-for contador, (index, linha) in enumerate(df.iterrows()):
-    progresso = (contador / len(df)) * 100
-    print(f'Loop {contador+1}/{len(df)} - {progresso:.2f}%')
-    bairro = linha["bairro"]
+            if sim > max_sim:
+                max_sim = sim
+                cidade_corrigida = cidades_canonicas[cidade_normalizada]
 
-    if pd.isnull(bairro):
-        continue
+        df_imoveis.at[index, "cidade_estimada"] = cidade_corrigida
 
-    max_sim = 0
-    bairro_corrigido = bairro
-    embedding_bairro = modelo.encode(bairro, convert_to_tensor=True, device='cuda')
+    return df_imoveis
 
-    for bairro_normalizado, embedding_bairro_normalizado in embeddings_bairros_canonicos.items():
-        sim = similaridade_bairros(embedding_bairro, embedding_bairro_normalizado)
+def normalizar_bairros(df_imoveis, modelo):
+    print('Iniciando processo de correção dos nomes dos bairros (para São João del Rei)')
+    df_imoveis = df_imoveis.query('cidade_estimada == "São João del Rei"')
 
-        if sim > max_sim:
-            max_sim = sim
-            bairro_corrigido = bairro_normalizado
+    if os.path.exists('embeddings/bairros_canonicos.pkl'):
+        embeddings_bairros_canonicos = pickle.load(open('embeddings/bairros_canonicos.pkl', 'rb'))
+    else:
+        bairros_canonicos = json.load(open('bairros_canonicos.json', 'r', encoding='utf-8'))
+        embeddings_bairros_canonicos = {}
 
-    df.at[index, "bairro_corrigido"] = bairro_corrigido
+        for bairro_info in bairros_canonicos:
+            bairro = bairro_info["bairro"]
+            embeddings_bairros_canonicos[bairro] = modelo.encode(bairro, convert_to_tensor=True, device='cuda')
 
-# Salvando o DataFrame
+        pickle.dump(embeddings_bairros_canonicos, open('embeddings/bairros_canonicos.pkl', 'wb'))
 
-df.to_excel('bairros_finalizado.xlsx')
+    def similaridade_bairros(embedding_1, embedding_2):
+        return util.pytorch_cos_sim(embedding_1, embedding_2).item()
 
-print('Finalizado')
+    for contador, (index, linha) in enumerate(df_imoveis.iterrows()):
+        progresso = (contador / len(df_imoveis)) * 100
+        print(f'Loop {contador+1}/{len(df_imoveis)} - {progresso:.2f}%')
+        bairro = linha["bairro"]
+
+        if pd.isnull(bairro):
+            continue
+
+        max_sim = 0
+        bairro_corrigido = bairro
+        embedding_bairro = modelo.encode(bairro, convert_to_tensor=True, device='cuda')
+
+        for bairro_normalizado, embedding_bairro_normalizado in embeddings_bairros_canonicos.items():
+            sim = similaridade_bairros(embedding_bairro, embedding_bairro_normalizado)
+
+            if sim > max_sim:
+                max_sim = sim
+                bairro_corrigido = bairro_normalizado
+
+        df_imoveis.at[index, "bairro_corrigido"] = bairro_corrigido
+
+    return df_imoveis
+
+def salvar_dados_finalizados(df_imoveis):
+    df_imoveis.to_excel('bairros_finalizado.xlsx')
+    print('Finalizado')
+
+if __name__ == "__main__":
+    df_imoveis, cidades_canonicas, modelo = carregar_e_preprar_dados()
+    df_imoveis = normalizar_cidades(df_imoveis, cidades_canonicas, modelo)
+    df_imoveis = normalizar_bairros(df_imoveis, modelo)
+    salvar_dados_finalizados(df_imoveis)
