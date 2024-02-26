@@ -1,6 +1,6 @@
 ## README
 
-O código fornecido realiza a normalização dos nomes das cidades e bairros em um conjunto de dados de imóveis exportado do Homeclix. Ele segue os seguintes passos:
+Este projeto se destina a realizar a normalização dos nomes das cidades e bairros em um conjunto de dados de imóveis exportado do Homeclix. Ele segue os seguintes passos:
 
 ### 1.1. Carregamento e Preparação dos Dados:
    - Carrega um conjunto de dados contendo informações sobre os tipos de imóveis e cidades canônicas.
