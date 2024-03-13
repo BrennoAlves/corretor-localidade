@@ -127,7 +127,7 @@ def normalizar_bairros(df_imoveis, modelo):
         df_imoveis.at[index, "bairro_corrigido"] = bairro_corrigido
 
     return df_imoveis
-
+    
 def salvar(df_imoveis):
     df_imoveis.to_excel('bairros_finalizado.xlsx')
     print('Finalizado')
