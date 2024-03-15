@@ -4,6 +4,7 @@ import json
 import os
 import pickle
 from sentence_transformers import SentenceTransformer, util
+import functools
 
 def limpar_console():
     os.system('clear' if os.name == 'posix' else 'cls')
@@ -63,6 +64,7 @@ def normalizar_cidades(df_imoveis, cidades_canonicas, modelo):
 
         pickle.dump(embeddings_cidades_canonicas, open('Embeddings/cidades_canonicas.pkl', 'wb'))
 
+    @functools.lru_cache()
     def similaridade_cidades(embedding_1, embedding_2):
         return util.pytorch_cos_sim(embedding_1, embedding_2).item()
 
@@ -105,6 +107,7 @@ def normalizar_bairros(df_imoveis, modelo):
 
         pickle.dump(embeddings_bairros_canonicos, open('Embeddings/bairros_canonicos.pkl', 'wb'))
 
+    @functools.lru_cache()
     def similaridade_bairros(embedding_1, embedding_2):
         return util.pytorch_cos_sim(embedding_1, embedding_2).item()
 
