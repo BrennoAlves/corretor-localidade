@@ -1,20 +1,28 @@
-import requests
 import json
 import os
 import unicodedata
+import requests
 
-url_base = 'https://servicodados.ibge.gov.br/api/v1/localidades/municipios'
+DATA_PATH = os.path.join(os.path.dirname(__file__), '..', 'Data')
+CIDADES_CANONICAS_JSON = os.path.join(DATA_PATH, 'cidades_canonicas.json')
+URL_BASE = 'https://servicodados.ibge.gov.br/api/v1/localidades/municipios'
 
-response = requests.get(url_base)
-data = response.json()
+def obter_nomes_municipios():
+    response = requests.get(URL_BASE)
+    data = response.json()
+    return [item['nome'] for item in data]
 
-nomes_municipios = [item['nome'] for item in data]
-
-def normalizador(nome):
+def normalizar_nome(nome):
     return unicodedata.normalize('NFKD', nome.lower()).encode('ASCII', 'ignore').decode('utf-8')
 
-dicionario_cidades = {normalizador(cidade): cidade for cidade in nomes_municipios}
+def criar_dicionario_cidades(nomes_municipios):
+    return {normalizar_nome(cidade): cidade for cidade in nomes_municipios}
 
-output = os.path.join(os.path.dirname(__file__), '..', 'Data', 'cidades_canonicas.json')
-with open(output, 'w', encoding='utf-8') as f:
-    json.dump(dicionario_cidades, f, ensure_ascii = False, indent=4)
+def salvar_dicionario_cidades(dicionario_cidades, arquivo_saida):
+    with open(arquivo_saida, 'w', encoding='utf-8') as f:
+        json.dump(dicionario_cidades, f, ensure_ascii=False, indent=4)
+
+if __name__ == '__main__':
+    nomes_municipios = obter_nomes_municipios()
+    dicionario_cidades = criar_dicionario_cidades(nomes_municipios)
+    salvar_dicionario_cidades(dicionario_cidades, CIDADES_CANONICAS_JSON)
