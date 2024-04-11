@@ -4,7 +4,6 @@ Este projeto se destina a realizar a normalização dos nomes das cidades e bair
 
 ### 1.1. Carregamento e Preparação dos Dados:
    - Carrega um conjunto de dados contendo informações sobre os tipos de imóveis e cidades canônicas.
-   - Descarta colunas desnecessárias do conjunto de dados de imóveis.
    - Carrega o modelo de incorporação de frases SentenceTransformer.
 
 ### 1.2. Normalização das Cidades:
