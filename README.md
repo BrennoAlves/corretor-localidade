@@ -1,6 +1,6 @@
 ## README
 
-Este projeto se destina a realizar a normalização dos nomes das cidades e bairros em um conjunto de dados de imóveis exportado do Homeclix. Ele segue os seguintes passos:
+Este projeto realiza a normalização dos nomes das cidades e bairros em um conjunto de dados, ele deve funcionar em qualquer conjunto caso tenha as colunas bairro e cidade, contendo seus respesctivos nomes salvos como string. Ele segue os seguintes passos:
 
 ### 1.1. Carregamento e Preparação dos Dados:
    - Carrega um conjunto de dados contendo informações sobre os tipos de imóveis e cidades canônicas.
@@ -11,9 +11,7 @@ Este projeto se destina a realizar a normalização dos nomes das cidades e bair
    - Calcula a similaridade de cosseno entre cada cidade no conjunto de dados e as cidades canônicas.
    - Corrige os nomes das cidades no conjunto de dados com base na cidade canônica mais similar.
 
-### 1.3. Normalização dos Bairros (para São João del Rei):
-   - Filtra o conjunto de dados para conter apenas imóveis localizados em São João del Rei.
-   - Gera representações de incorporação para os bairros canônicos em São João del Rei usando o modelo SentenceTransformer.
+### 1.3. Normalização dos Bairros:
    - Calcula a similaridade de cosseno entre cada bairro no conjunto de dados e os bairros canônicos.
    - Corrige os nomes dos bairros no conjunto de dados com base no bairro canônico mais similar.
 
@@ -22,16 +20,14 @@ Este projeto se destina a realizar a normalização dos nomes das cidades e bair
 
 # Configuração do Ambiente
 
-Este guia fornece instruções sobre como configurar um ambiente Python para trabalhar com o projeto em questão.
-
 ## Passo 1: Criar uma Virtual Environment (venv)
 
 1. Abra um terminal ou prompt de comando.
 2. Navegue até o diretório onde deseja criar sua virtual environment.
-3. Execute o seguinte comando para criar uma nova virtual environment chamada "." (ponto) ou seja criativo:
+3. Execute o seguinte comando para criar uma nova virtual environment chamada "venv" ou seja criativo:
 
     ```
-    python -m venv .
+    python -m venv venv
     ```
 
 4. Ative a virtual environment:
@@ -39,13 +35,13 @@ Este guia fornece instruções sobre como configurar um ambiente Python para tra
     - No Windows:
 
         ```
-        .\Scripts\activate
+        venv\Scripts\activate
         ```
 
     - No macOS e Linux:
 
         ```
-        source ./bin/activate
+        source venv/bin/activate
         ```
 
 ## Passo 2: Instalar os Requisitos do Projeto
@@ -65,3 +61,11 @@ Este guia fornece instruções sobre como configurar um ambiente Python para tra
     ```
 
     Certifique-se de estar dentro da virtual environment antes de executar este comando.
+
+## Passo 4: Execução
+
+Basicamente só rodar o arquivo main.py tendo os dados com nome de imoveis.json (que possua as colunas bairro e cidade, pode ter mais, não vai interferir, mas essas são obrigatórias) em uma pasta com nome de data, ele deve buscar os dados necessários e salvar em arquivos tanto na pasta data quanto embeddings.
+
+Para dados que não estejam em json e/ou em colunas com nomes diferentes as mudanças são bem simples, basta mudar nome de variáveis e o método que o pandas usa para abrir o arquivo.
+
+

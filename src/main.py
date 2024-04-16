@@ -1,4 +1,3 @@
-import faiss  
 import json
 import os
 import pickle
@@ -8,6 +7,7 @@ import numpy as np
 import pandas as pd  
 from sentence_transformers import SentenceTransformer
 import subprocess
+import faiss  
 
 import pegar_bairros
 
@@ -41,7 +41,7 @@ def carregar_dados(imoveis_json, modalidades, status):
     verificar_cidades_canonicas(CIDADES_CANONICAS_JSON)
     cidades_canonicas: dict[str, list[str]] = json.load(open(CIDADES_CANONICAS_JSON, "r", encoding="utf-8"))
     
-    # Carregar df_imoveis ANTES de verificar bairros canônicos
+    #Carregar df_imoveis ANTES de verificar bairros canônicos
     modelo = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
     df_imoveis = pd.read_json(imoveis_json)
     df_imoveis = df_imoveis[~df_imoveis["id"].isin([0, 1, 14, 15])]
@@ -68,6 +68,10 @@ def verificar_cidades_canonicas(arquivo: str) -> None:
 
 #Normaliza o nome das cidades, usando LLM para comparar semanticamente os dados brutos e o dicionário de cidades_canonicas, usando Faiss para gerar índice e agilizar essa comparação e não ter que percorrer toda a lista
 def normalizar_cidades(df_imoveis, cidades_canonicas, modelo, embeddings_path):
+
+    if not os.path.exists(embeddings_path):
+        os.makedirs(embeddings_path)
+
     try:
         embeddings_cidades_canonicas = pickle.load(open(os.path.join(embeddings_path, "cidades_canonicas.pkl"), "rb"))
     except:
@@ -124,11 +128,9 @@ def normalizar_bairros(df_imoveis, bairros_canonicos, modelo, embeddings_path):
             embeddings_bairros_canonicos[bairro_normalizado] = modelo.encode(bairro_normalizado, convert_to_tensor=True, device="cuda")
         pickle.dump(embeddings_bairros_canonicos, open(os.path.join(embeddings_path, "bairros_canonicos.pkl"), "wb"))
 
-    # Create Faiss index for canonical neighborhoods
     index_bairros = faiss.IndexFlatL2(list(embeddings_bairros_canonicos.values())[0].shape[0])
     index_bairros.add(np.stack([t.cpu().numpy() for t in embeddings_bairros_canonicos.values()]))
 
-    # Batch vectorization for all neighborhoods
     embeddings_bairros = modelo.encode(
         df_imoveis["bairro"].astype(str).tolist(), batch_size=64, convert_to_tensor=True, device="cuda")
 
@@ -146,17 +148,17 @@ def normalizar_bairros(df_imoveis, bairros_canonicos, modelo, embeddings_path):
 
 #Corrigindo a escrita do nome das cidades batendo de novo no cidades_canonicas
 def corrigir_nomes_cidades(df_imoveis, cidades_canonicas):
-    # Transformar a coluna 'cidade_estimada' para minúsculas e remover espaços duplicados no final do nome
+    #Transformar a coluna 'cidade_estimada' para minúsculas e remover espaços duplicados no final do nome
     df_imoveis['cidade_estimada'] = df_imoveis['cidade_estimada'].str.lower().str.rstrip()
 
-    # Comparar cada cidade estimada com as cidades canônicas
+    #Comparar cada cidade estimada com as cidades canônicas
     for index, row in df_imoveis.iterrows():
         cidade_estimada = row['cidade_estimada']
 
-        # Verificar se a cidade estimada está no dicionário de cidades canônicas
+        #Verificar se a cidade estimada está no dicionário de cidades canônicas
         if cidade_estimada in cidades_canonicas:
 
-            # Se estiver, substituir pelo nome canônico correspondente
+            #Se estiver, substituir pelo nome canônico correspondente
             cidade_canonica = cidades_canonicas[cidade_estimada]
             df_imoveis.at[index, 'cidade_estimada'] = cidade_canonica
 
@@ -165,6 +167,8 @@ def corrigir_nomes_cidades(df_imoveis, cidades_canonicas):
 
 #Salva o resultando em arquivo excel
 def salvar_resultados(df_imoveis, output_file):
+    if not os.path.exists("processados"):
+        os.makedirs("processados")
     df_imoveis.to_excel(output_file)
     
 
