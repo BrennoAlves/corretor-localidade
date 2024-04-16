@@ -10,5 +10,7 @@ site-packages/
 _pycache_
 venv
 .gitattributes
-cidades_canonicas.json
-bairros_canonicas.json
+data/cidades_canonicas.json
+data/bairros_canonicos.json
+embeddings/bairros_canonicos.pkl
+embeddings/cidades_canonicos.pkl
