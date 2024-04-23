@@ -100,7 +100,6 @@ def normalizar_cidades(df_imoveis, cidades_canonicas, modelo, embeddings_path):
     return df_imoveis
 
 
-
 def verificar_bairros_canonicos(arquivo: str, df_imoveis) -> None:
 
     if not os.path.exists(arquivo):
@@ -140,8 +139,8 @@ def normalizar_bairros(df_imoveis, bairros_canonicos, modelo, embeddings_path):
             continue
         embedding_bairro = embeddings_bairros[contador]
         _, indices = index_bairros.search(np.expand_dims(embedding_bairro.cpu(), axis=0), k=1)
-        bairro_corrigido = list(embeddings_bairros_canonicos.keys())[indices[0][0]]
-        df_imoveis.at[index, "bairro_corrigido"] = bairro_corrigido
+        bairro_estimado = list(embeddings_bairros_canonicos.keys())[indices[0][0]]
+        df_imoveis.at[index, "bairro_estimado"] = bairro_estimado
 
     return df_imoveis
 

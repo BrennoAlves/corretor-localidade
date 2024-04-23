@@ -15,3 +15,4 @@ data/bairros_canonicos.json
 embeddings/bairros_canonicos.pkl
 embeddings/cidades_canonicas.pkl
 src/__pycache__/
+imoveis.json
