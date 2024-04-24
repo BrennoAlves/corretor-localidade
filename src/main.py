@@ -188,7 +188,6 @@ if __name__ == "__main__":
     df_imoveis = normalizar_bairros(df_imoveis, bairros_canonicos, modelo, EMBEDDINGS_PATH)
 
     print("Fazendo últimas correções.")
-
     df_imoveis = corrigir_nomes_cidades(df_imoveis, cidades_canonicas)
     salvar_resultados(df_imoveis, SALVAR_PATH)
 
